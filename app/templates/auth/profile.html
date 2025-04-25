@@ -1,0 +1,306 @@
+<!-- app/templates/auth/profile.html - User profile management page -->
+{% extends 'base.html' %}
+
+{% block title %}My Profile | HealthEconomics360{% endblock %}
+
+{% block content %}
+<div class="container-fluid pt-3">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="fas fa-user-circle me-2"></i> My Profile</h1>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">User Information</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="avatar-circle mb-3">
+                        <span class="initials">{{ current_user.first_name[0] if current_user.first_name else '' }}{{ current_user.last_name[0] if current_user.last_name else '' }}</span>
+                    </div>
+                    <h5 class="card-title">{{ current_user.get_full_name() }}</h5>
+                    <p class="card-text text-muted">{{ current_user.email }}</p>
+                    <p class="card-text">
+                        <span class="badge bg-primary">{{ current_user.role.name|capitalize if current_user.role else 'User' }}</span>
+                    </p>
+                    <div class="card-text">
+                        <p><strong>Organization:</strong> {{ current_user.organization or 'Not specified' }}</p>
+                        <p><strong>Position:</strong> {{ current_user.position or 'Not specified' }}</p>
+                        <p><strong>Member since:</strong> {{ current_user.created_at.strftime('%B %d, %Y') }}</p>
+                        <p><strong>Last login:</strong> {{ current_user.last_login.strftime('%B %d, %Y at %H:%M') if current_user.last_login else 'Never' }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Activity Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="activity-stat">
+                                <h3>5</h3>
+                                <p>Dashboards</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="activity-stat">
+                                <h3>12</h3>
+                                <p>Reports</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row text-center mt-3">
+                        <div class="col-6">
+                            <div class="activity-stat">
+                                <h3>8</h3>
+                                <p>Analyses</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="activity-stat">
+                                <h3>20</h3>
+                                <p>Logins</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Edit Profile</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('auth.profile') }}">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" value="{{ current_user.first_name or '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" value="{{ current_user.last_name or '' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="email" value="{{ current_user.email }}" disabled>
+                            <div class="form-text">Email cannot be changed. Contact administrator for assistance.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" value="{{ current_user.username }}" disabled>
+                            <div class="form-text">Username cannot be changed.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="organization" class="form-label">Organization</label>
+                            <input type="text" class="form-control" id="organization" name="organization" value="{{ current_user.organization or '' }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="position" class="form-label">Position/Role</label>
+                            <input type="text" class="form-control" id="position" name="position" value="{{ current_user.position or '' }}">
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Change Password</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('auth.profile') }}" id="passwordForm">
+                        <div class="mb-3">
+                            <label for="current_password" class="form-label">Current Password</label>
+                            <input type="password" class="form-control" id="current_password" name="current_password">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">New Password</label>
+                            <input type="password" class="form-control" id="password" name="password">
+                            <div class="form-text" id="passwordStrength"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="confirm_password" class="form-label">Confirm New Password</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+                            <div class="form-text" id="passwordMatch"></div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Change Password</button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Preferences</h5>
+                </div>
+                <div class="card-body">
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label">Dashboard Settings</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="defaultView" checked>
+                                <label class="form-check-label" for="defaultView">Use custom dashboard as default landing page</label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Notifications</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                                <label class="form-check-label" for="emailNotifications">Receive email notifications</label>
+                            </div>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" id="priceAlerts" checked>
+                                <label class="form-check-label" for="priceAlerts">Price disparity alerts</label>
+                            </div>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" id="recommendationAlerts" checked>
+                                <label class="form-check-label" for="recommendationAlerts">New recommendation alerts</label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="defaultCurrency" class="form-label">Default Currency</label>
+                            <select class="form-select" id="defaultCurrency">
+                                <option value="USD" selected>USD - US Dollar</option>
+                                <option value="EUR">EUR - Euro</option>
+                                <option value="GBP">GBP - British Pound</option>
+                                <option value="CAD">CAD - Canadian Dollar</option>
+                            </select>
+                        </div>
+                        
+                        <button type="button" class="btn btn-primary">Save Preferences</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .avatar-circle {
+        width: 100px;
+        height: 100px;
+        background-color: #0d6efd;
+        border-radius: 50%;
+        margin: 0 auto;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .initials {
+        font-size: 40px;
+        color: white;
+        font-weight: bold;
+    }
+    
+    .activity-stat {
+        padding: 10px;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+    }
+    
+    .activity-stat h3 {
+        font-size: 24px;
+        margin-bottom: 0;
+        color: #0d6efd;
+    }
+    
+    .activity-stat p {
+        margin-bottom: 0;
+        color: #6c757d;
+        font-size: 14px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirm_password');
+        const passwordStrength = document.getElementById('passwordStrength');
+        const passwordMatch = document.getElementById('passwordMatch');
+        
+        // Password strength checker
+        password?.addEventListener('input', function() {
+            const value = this.value;
+            let strength = 0;
+            
+            if (value.length >= 8) strength += 1;
+            if (value.match(/[a-z]/)) strength += 1;
+            if (value.match(/[A-Z]/)) strength += 1;
+            if (value.match(/[0-9]/)) strength += 1;
+            if (value.match(/[^a-zA-Z0-9]/)) strength += 1;
+            
+            switch (strength) {
+                case 0:
+                case 1:
+                    passwordStrength.innerHTML = 'Weak password';
+                    passwordStrength.className = 'form-text text-danger';
+                    break;
+                case 2:
+                case 3:
+                    passwordStrength.innerHTML = 'Medium strength password';
+                    passwordStrength.className = 'form-text text-warning';
+                    break;
+                case 4:
+                case 5:
+                    passwordStrength.innerHTML = 'Strong password';
+                    passwordStrength.className = 'form-text text-success';
+                    break;
+            }
+        });
+        
+        // Password match checker
+        function checkPasswordMatch() {
+            if (!password || !confirmPassword) return;
+            
+            if (password.value === confirmPassword.value) {
+                passwordMatch.innerHTML = 'Passwords match';
+                passwordMatch.className = 'form-text text-success';
+                return true;
+            } else {
+                passwordMatch.innerHTML = 'Passwords do not match';
+                passwordMatch.className = 'form-text text-danger';
+                return false;
+            }
+        }
+        
+        confirmPassword?.addEventListener('input', checkPasswordMatch);
+        password?.addEventListener('input', function() {
+            if (confirmPassword && confirmPassword.value.length > 0) {
+                checkPasswordMatch();
+            }
+        });
+        
+        // Form validation
+        const passwordForm = document.getElementById('passwordForm');
+        if (passwordForm) {
+            passwordForm.addEventListener('submit', function(event) {
+                if (!checkPasswordMatch()) {
+                    event.preventDefault();
+                    alert('Passwords do not match. Please correct before submitting.');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

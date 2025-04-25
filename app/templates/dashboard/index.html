@@ -1,0 +1,549 @@
+<!-- app/templates/dashboard/index.html - Main dashboard page -->
+{% extends 'base.html' %}
+
+{% block title %}Dashboard | HealthEconomics360{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Dashboard</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="refresh-dashboard">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="export-dashboard">
+                <i class="fas fa-download"></i> Export
+            </button>
+        </div>
+        <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="timeRangeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-calendar"></i> This Month
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="timeRangeDropdown">
+                <li><a class="dropdown-item time-range" data-range="week" href="#">This Week</a></li>
+                <li><a class="dropdown-item time-range" data-range="month" href="#">This Month</a></li>
+                <li><a class="dropdown-item time-range" data-range="quarter" href="#">This Quarter</a></li>
+                <li><a class="dropdown-item time-range" data-range="year" href="#">This Year</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item time-range" data-range="custom" href="#">Custom Range</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-3">
+                        <i class="fas fa-pills fa-3x"></i>
+                    </div>
+                    <div class="col-9 text-end">
+                        <h3>{{ drug_count }}</h3>
+                        <p class="mb-0">Drugs Tracked</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer d-flex align-items-center">
+                <a href="{{ url_for('pricing.drugs') }}" class="text-white text-decoration-none">
+                    <span>View Details</span>
+                    <i class="fas fa-arrow-circle-right ms-2"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-3">
+                        <i class="fas fa-hospital fa-3x"></i>
+                    </div>
+                    <div class="col-9 text-end">
+                        <h3>{{ organization_count }}</h3>
+                        <p class="mb-0">Organizations</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer d-flex align-items-center">
+                <a href="{{ url_for('resources.organizations') }}" class="text-white text-decoration-none">
+                    <span>View Details</span>
+                    <i class="fas fa-arrow-circle-right ms-2"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-3">
+                        <i class="fas fa-dollar-sign fa-3x"></i>
+                    </div>
+                    <div class="col-9 text-end">
+                        <h3 id="price-disparity">--</h3>
+                        <p class="mb-0">Avg Price Disparity</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer d-flex align-items-center">
+                <a href="{{ url_for('pricing.analysis') }}" class="text-white text-decoration-none">
+                    <span>View Details</span>
+                    <i class="fas fa-arrow-circle-right ms-2"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-3">
+                        <i class="fas fa-lightbulb fa-3x"></i>
+                    </div>
+                    <div class="col-9 text-end">
+                        <h3>{{ recommendation_count }}</h3>
+                        <p class="mb-0">Recommendations</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer d-flex align-items-center">
+                <a href="{{ url_for('dashboard.recommendations') }}" class="text-white text-decoration-none">
+                    <span>View Details</span>
+                    <i class="fas fa-arrow-circle-right ms-2"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Dashboard Content -->
+<div class="row mb-4">
+    <!-- Price Comparison Chart -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-bar me-2"></i> Price Comparison Across Regions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="position: relative; height:300px;">
+                    <canvas id="priceComparisonChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Recommendations -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-star me-2"></i> Top Recommendations
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for recommendation in top_recommendations %}
+                        <a href="{{ url_for('dashboard.recommendations') }}#rec-{{ recommendation.id }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ recommendation.title }}</h6>
+                                <small>${{ '%0.2f'|format(recommendation.estimated_impact|float) }}</small>
+                            </div>
+                            <p class="mb-1 text-truncate">{{ recommendation.description }}</p>
+                            <small>
+                                <span class="badge bg-{{ 'success' if recommendation.confidence_level == 'High' else 'warning' if recommendation.confidence_level == 'Medium' else 'secondary' }}">
+                                    {{ recommendation.confidence_level }} Confidence
+                                </span>
+                            </small>
+                        </a>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-info-circle fa-2x mb-3"></i>
+                            <p>No recommendations available yet.</p>
+                            <a href="{{ url_for('analytics.generate_recs') }}" class="btn btn-sm btn-primary">Generate Recommendations</a>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{{ url_for('dashboard.recommendations') }}" class="text-decoration-none">View All Recommendations</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <!-- Resource Allocation -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-sitemap me-2"></i> Resource Allocation
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="position: relative; height:250px;">
+                    <canvas id="resourceAllocationChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Outcome Efficiency -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-balance-scale me-2"></i> Price vs. Outcome Efficiency
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="position: relative; height:250px;">
+                    <canvas id="outcomeEfficiencyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Analyses -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-chart-line me-2"></i> Recent Analyses
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Drug</th>
+                        <th>Analysis Type</th>
+                        <th>Date</th>
+                        <th>Key Findings</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for analysis in recent_analyses %}
+                        <tr>
+                            <td>{{ analysis.drug.name if analysis.drug else 'Multiple' }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'primary' if analysis.analysis_type == 'disparity' else 'success' if analysis.analysis_type == 'trend' else 'info' }}">
+                                    {{ analysis.analysis_type|capitalize }}
+                                </span>
+                            </td>
+                            <td>{{ analysis.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {% if analysis.analysis_data %}
+                                    {% if analysis.analysis_type == 'disparity' %}
+                                        Price variance: {{ '%0.2f'|format(analysis.analysis_data.get('variation_pct', 0) * 100) }}%
+                                    {% elif analysis.analysis_type == 'trend' %}
+                                        {{ analysis.analysis_data.get('trend_direction', 'Stable') }} trend detected
+                                    {% else %}
+                                        Analysis available
+                                    {% endif %}
+                                {% else %}
+                                    No data available
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('pricing.analysis') }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4">
+                                <i class="fas fa-info-circle fa-2x mb-3"></i>
+                                <p>No recent analyses available.</p>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load dashboard data from API
+        fetch('{{ url_for("dashboard.dashboard_data") }}')
+            .then(response => response.json())
+            .then(data => {
+                // Update price disparity metric
+                updatePriceDisparity(data);
+                
+                // Initialize charts
+                initPriceComparisonChart(data);
+                initResourceAllocationChart(data);
+                initOutcomeEfficiencyChart(data);
+            })
+            .catch(error => {
+                console.error('Error loading dashboard data:', error);
+            });
+            
+        // Set up refresh button
+        document.getElementById('refresh-dashboard').addEventListener('click', function() {
+            window.location.reload();
+        });
+        
+        // Set up time range filters
+        document.querySelectorAll('.time-range').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const range = this.getAttribute('data-range');
+                document.getElementById('timeRangeDropdown').innerHTML = `<i class="fas fa-calendar"></i> ${this.textContent}`;
+                // Update charts based on time range
+                // This would make an API call with the selected range
+            });
+        });
+    });
+    
+    function updatePriceDisparity(data) {
+        const priceDisparityElement = document.getElementById('price-disparity');
+        if (data.price_data && data.price_data.length > 0) {
+            // Calculate average price disparity percentage
+            const drugs = {};
+            
+            data.price_data.forEach(item => {
+                if (!drugs[item.drug]) {
+                    drugs[item.drug] = {
+                        prices: [],
+                        min: Infinity,
+                        max: -Infinity
+                    };
+                }
+                
+                drugs[item.drug].prices.push(item.price);
+                drugs[item.drug].min = Math.min(drugs[item.drug].min, item.price);
+                drugs[item.drug].max = Math.max(drugs[item.drug].max, item.price);
+            });
+            
+            let totalDisparity = 0;
+            let count = 0;
+            
+            for (const drug in drugs) {
+                if (drugs[drug].min > 0) {
+                    const disparity = (drugs[drug].max - drugs[drug].min) / drugs[drug].min * 100;
+                    totalDisparity += disparity;
+                    count++;
+                }
+            }
+            
+            const avgDisparity = count > 0 ? (totalDisparity / count).toFixed(1) : 0;
+            priceDisparityElement.textContent = `${avgDisparity}%`;
+        } else {
+            priceDisparityElement.textContent = 'N/A';
+        }
+    }
+    
+    function initPriceComparisonChart(data) {
+        const ctx = document.getElementById('priceComparisonChart').getContext('2d');
+        
+        // Transform data for chart
+        const chartData = {
+            labels: [],
+            datasets: []
+        };
+        
+        if (data.price_data && data.price_data.length > 0) {
+            // Group by drug and region
+            const drugRegionData = {};
+            
+            data.price_data.forEach(item => {
+                if (!chartData.labels.includes(item.drug)) {
+                    chartData.labels.push(item.drug);
+                }
+                
+                const key = item.region;
+                if (!drugRegionData[key]) {
+                    drugRegionData[key] = {};
+                }
+                
+                drugRegionData[key][item.drug] = item.price;
+            });
+            
+            // Create datasets for each region
+            const colors = [
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(255, 99, 132, 0.7)',
+                'rgba(255, 206, 86, 0.7)',
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(153, 102, 255, 0.7)'
+            ];
+            
+            let colorIndex = 0;
+            for (const region in drugRegionData) {
+                const dataset = {
+                    label: region,
+                    backgroundColor: colors[colorIndex % colors.length],
+                    borderColor: colors[colorIndex % colors.length].replace('0.7', '1'),
+                    borderWidth: 1,
+                    data: []
+                };
+                
+                chartData.labels.forEach(drug => {
+                    dataset.data.push(drugRegionData[region][drug] || null);
+                });
+                
+                chartData.datasets.push(dataset);
+                colorIndex++;
+            }
+        }
+        
+        // Create the chart
+        new Chart(ctx, {
+            type: 'bar',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: $${context.raw.toFixed(2)}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Price (USD)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function initResourceAllocationChart(data) {
+        const ctx = document.getElementById('resourceAllocationChart').getContext('2d');
+        
+        // Sample data for resource allocation
+        const chartData = {
+            labels: ['Pharmaceuticals', 'Equipment', 'Staff', 'Facilities', 'Administrative', 'Other'],
+            datasets: [{
+                data: [30, 25, 20, 15, 7, 3],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(153, 102, 255, 0.7)',
+                    'rgba(255, 159, 64, 0.7)'
+                ],
+                borderWidth: 1
+            }]
+        };
+        
+        // Create the chart
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${context.raw}%`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function initOutcomeEfficiencyChart(data) {
+        const ctx = document.getElementById('outcomeEfficiencyChart').getContext('2d');
+        
+        // Sample data for outcome efficiency
+        const chartData = {
+            labels: ['Treatment A', 'Treatment B', 'Treatment C', 'Treatment D', 'Treatment E'],
+            datasets: [{
+                label: 'Cost ($)',
+                data: [1200, 800, 1500, 650, 950],
+                backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1,
+                yAxisID: 'y'
+            }, {
+                label: 'Outcome Score',
+                data: [75, 65, 90, 50, 85],
+                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1,
+                yAxisID: 'y1'
+            }]
+        };
+        
+        // Create the chart
+        new Chart(ctx, {
+            type: 'bar',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Cost ($)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        grid: {
+                            drawOnChartArea: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Outcome Score'
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

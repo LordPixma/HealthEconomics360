@@ -1,0 +1,98 @@
+<!-- app/templates/components/sidebar.html - Sidebar navigation component -->
+<nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+    <div class="position-sticky pt-3">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'dashboard.index' else '' }}" href="{{ url_for('dashboard.index') }}">
+                    <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                </a>
+            </li>
+            
+            <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                <span>Price Transparency</span>
+            </h6>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'pricing.index' else '' }}" href="{{ url_for('pricing.index') }}">
+                    <i class="fas fa-tags me-2"></i> Price Overview
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'pricing.drugs' else '' }}" href="{{ url_for('pricing.drugs') }}">
+                    <i class="fas fa-pills me-2"></i> Drugs
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'pricing.prices' else '' }}" href="{{ url_for('pricing.prices') }}">
+                    <i class="fas fa-dollar-sign me-2"></i> Price Data
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'pricing.analysis' else '' }}" href="{{ url_for('pricing.analysis') }}">
+                    <i class="fas fa-chart-line me-2"></i> Price Analysis
+                </a>
+            </li>
+            
+            <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                <span>Resource Allocation</span>
+            </h6>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'resources.index' else '' }}" href="{{ url_for('resources.index') }}">
+                    <i class="fas fa-sitemap me-2"></i> Resource Overview
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'resources.organizations' else '' }}" href="{{ url_for('resources.organizations') }}">
+                    <i class="fas fa-hospital me-2"></i> Organizations
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'resources.departments' else '' }}" href="{{ url_for('resources.departments') }}">
+                    <i class="fas fa-briefcase-medical me-2"></i> Departments
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'resources.allocations' else '' }}" href="{{ url_for('resources.allocations') }}">
+                    <i class="fas fa-tasks me-2"></i> Allocations
+                </a>
+            </li>
+            
+            <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                <span>Analytics</span>
+            </h6>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'dashboard.price_outcome' else '' }}" href="{{ url_for('dashboard.price_outcome') }}">
+                    <i class="fas fa-balance-scale me-2"></i> Price vs. Outcome
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'dashboard.resource_optimizer' else '' }}" href="{{ url_for('dashboard.resource_optimizer') }}">
+                    <i class="fas fa-sliders-h me-2"></i> Resource Optimizer
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'dashboard.waste_identification' else '' }}" href="{{ url_for('dashboard.waste_identification') }}">
+                    <i class="fas fa-trash-alt me-2"></i> Waste Identification
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'dashboard.recommendations' else '' }}" href="{{ url_for('dashboard.recommendations') }}">
+                    <i class="fas fa-lightbulb me-2"></i> Recommendations
+                </a>
+            </li>
+            
+            <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                <span>Advanced</span>
+            </h6>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'analytics.insights' else '' }}" href="{{ url_for('analytics.insights') }}">
+                    <i class="fas fa-brain me-2"></i> Insights
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if 'api.' in request.endpoint else '' }}" href="{{ url_for('api.dashboard_summary') }}">
+                    <i class="fas fa-code me-2"></i> API
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>

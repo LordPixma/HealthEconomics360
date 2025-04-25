@@ -1,0 +1,203 @@
+<!-- app/templates/auth/register.html - User registration page -->
+{% extends 'base.html' %}
+
+{% block title %}Register | HealthEconomics360{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4 class="mb-0"><i class="fas fa-user-plus me-2"></i> Create an Account</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('auth.register') }}" id="registrationForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name" class="form-label">First Name</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                    <input type="text" class="form-control" id="first_name" name="first_name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name" class="form-label">Last Name</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                    <input type="text" class="form-control" id="last_name" name="last_name" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                            <div class="form-text">We'll never share your email with anyone else.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-user-tag"></i></span>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                    <input type="password" class="form-control" id="password" name="password" required>
+                                </div>
+                                <div class="form-text" id="passwordStrength"></div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="confirm_password" class="form-label">Confirm Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                                </div>
+                                <div class="form-text" id="passwordMatch"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="organization" class="form-label">Organization</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-building"></i></span>
+                                <input type="text" class="form-control" id="organization" name="organization">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="position" class="form-label">Position/Role</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-briefcase"></i></span>
+                                <input type="text" class="form-control" id="position" name="position">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
+                            <label class="form-check-label" for="terms">I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms and Conditions</a></label>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary" id="registerButton">Register</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-center">
+                    <p class="mb-0">Already have an account? <a href="{{ url_for('auth.login') }}">Login</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Terms and Conditions Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="termsModalLabel">Terms and Conditions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h5>1. Terms</h5>
+                <p>By accessing the HealthEconomics360 platform, you agree to be bound by these terms of service and all applicable laws and regulations.</p>
+                
+                <h5>2. Privacy Policy</h5>
+                <p>Your use of HealthEconomics360 is also subject to our Privacy Policy, which governs our collection and use of your information.</p>
+                
+                <h5>3. Data Usage</h5>
+                <p>HealthEconomics360 processes healthcare economic data to provide insights and recommendations. You agree to only use this platform for legitimate business purposes.</p>
+                
+                <h5>4. Account Responsibilities</h5>
+                <p>You are responsible for maintaining the confidentiality of your account information and for all activities that occur under your account.</p>
+                
+                <h5>5. Service Modifications</h5>
+                <p>HealthEconomics360 reserves the right to modify or discontinue the service with or without notice at any time.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">I Agree</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirm_password');
+        const passwordStrength = document.getElementById('passwordStrength');
+        const passwordMatch = document.getElementById('passwordMatch');
+        const registerButton = document.getElementById('registerButton');
+        
+        // Password strength checker
+        password.addEventListener('input', function() {
+            const value = this.value;
+            let strength = 0;
+            
+            if (value.length >= 8) strength += 1;
+            if (value.match(/[a-z]/)) strength += 1;
+            if (value.match(/[A-Z]/)) strength += 1;
+            if (value.match(/[0-9]/)) strength += 1;
+            if (value.match(/[^a-zA-Z0-9]/)) strength += 1;
+            
+            switch (strength) {
+                case 0:
+                case 1:
+                    passwordStrength.innerHTML = 'Weak password';
+                    passwordStrength.className = 'form-text text-danger';
+                    break;
+                case 2:
+                case 3:
+                    passwordStrength.innerHTML = 'Medium strength password';
+                    passwordStrength.className = 'form-text text-warning';
+                    break;
+                case 4:
+                case 5:
+                    passwordStrength.innerHTML = 'Strong password';
+                    passwordStrength.className = 'form-text text-success';
+                    break;
+            }
+        });
+        
+        // Password match checker
+        function checkPasswordMatch() {
+            if (password.value === confirmPassword.value) {
+                passwordMatch.innerHTML = 'Passwords match';
+                passwordMatch.className = 'form-text text-success';
+                return true;
+            } else {
+                passwordMatch.innerHTML = 'Passwords do not match';
+                passwordMatch.className = 'form-text text-danger';
+                return false;
+            }
+        }
+        
+        confirmPassword.addEventListener('input', checkPasswordMatch);
+        password.addEventListener('input', function() {
+            if (confirmPassword.value.length > 0) {
+                checkPasswordMatch();
+            }
+        });
+        
+        // Form validation
+        document.getElementById('registrationForm').addEventListener('submit', function(event) {
+            if (!checkPasswordMatch()) {
+                event.preventDefault();
+                alert('Passwords do not match. Please correct before submitting.');
+            }
+        });
+    });
+</script>
+{% endblock %}
