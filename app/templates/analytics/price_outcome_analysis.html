@@ -1,0 +1,548 @@
+<!-- app/templates/analytics/price_outcome_analysis.html - Price vs. Outcome Analysis page -->
+{% extends 'base.html' %}
+
+{% block title %}Price vs. Outcome Analysis | HealthEconomics360{% endblock %}
+
+{% block content %}
+<div class="container-fluid pt-3">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="fas fa-balance-scale me-2"></i> Price vs. Outcome Analysis</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="refresh-data">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="export-data">
+                    <i class="fas fa-download"></i> Export
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analysis Filters -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-filter me-2"></i> Analysis Filters</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="treatmentFilter" class="form-label">Treatment</label>
+                    <select class="form-select" id="treatmentFilter">
+                        <option value="">All Treatments</option>
+                        {% for treatment in treatments %}
+                            <option value="{{ treatment.id }}">{{ treatment.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="outcomeFilter" class="form-label">Outcome Measure</label>
+                    <select class="form-select" id="outcomeFilter">
+                        <option value="">All Outcomes</option>
+                        {% for outcome in outcomes %}
+                            <option value="{{ outcome.outcome_id }}">{{ outcome.outcome.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="organizationFilter" class="form-label">Organization</label>
+                    <select class="form-select" id="organizationFilter">
+                        <option value="">All Organizations</option>
+                        <!-- Organizations would be loaded dynamically -->
+                    </select>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end mt-3">
+                <button type="button" class="btn btn-primary" id="applyFilters">
+                    <i class="fas fa-search me-2"></i> Apply Filters
+                </button>
+                <button type="button" class="btn btn-secondary ms-2" id="resetFilters">
+                    <i class="fas fa-undo me-2"></i> Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analysis Results -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-chart-scatter me-2"></i> Price-Outcome Relationship</h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="chartTypeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-chart-scatter"></i> Scatter
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="chartTypeDropdown">
+                            <li><a class="dropdown-item chart-type" data-type="scatter" href="#">Scatter Plot</a></li>
+                            <li><a class="dropdown-item chart-type" data-type="bubble" href="#">Bubble Chart</a></li>
+                            <li><a class="dropdown-item chart-type" data-type="bar" href="#">Bar Chart</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="position: relative; height:400px;">
+                        <canvas id="priceOutcomeChart"></canvas>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i> 
+                        Bubble size indicates sample size. Hover over points for details.
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-calculator me-2"></i> Cost-Effectiveness Ratio</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover" id="effectivenessTable">
+                            <thead>
+                                <tr>
+                                    <th>Treatment</th>
+                                    <th>Ratio</th>
+                                    <th>Rank</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Table will be populated by JavaScript -->
+                                <tr>
+                                    <td colspan="3" class="text-center">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        Loading data...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="costEffectivenessMetrics" class="mt-3">
+                        <h6 class="text-muted">Key Metrics</h6>
+                        <div class="d-flex justify-content-between">
+                            <div class="text-center">
+                                <span class="d-block fs-4 fw-bold text-primary" id="avgCostMetric">--</span>
+                                <small class="text-muted">Avg. Cost</small>
+                            </div>
+                            <div class="text-center">
+                                <span class="d-block fs-4 fw-bold text-success" id="avgOutcomeMetric">--</span>
+                                <small class="text-muted">Avg. Outcome</small>
+                            </div>
+                            <div class="text-center">
+                                <span class="d-block fs-4 fw-bold text-info" id="avgRatioMetric">--</span>
+                                <small class="text-muted">Avg. Ratio</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Most Cost-Effective Treatments -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-trophy me-2"></i> Most Cost-Effective Treatments</h5>
+        </div>
+        <div class="card-body">
+            <div class="row" id="topTreatmentsContainer">
+                <!-- Cards will be populated by JavaScript -->
+                <div class="col-12 text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading top treatments...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Data Table -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-table me-2"></i> Detailed Data</h5>
+            <button class="btn btn-sm btn-outline-primary" id="toggleTable">
+                <i class="fas fa-eye"></i> Show Data
+            </button>
+        </div>
+        <div class="card-body collapse" id="detailedDataTable">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Treatment</th>
+                            <th>Outcome Measure</th>
+                            <th>Outcome Value</th>
+                            <th>Treatment Cost</th>
+                            <th>Cost-Effectiveness Ratio</th>
+                            <th>Organization</th>
+                            <th>Sample Size</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detailedTableBody">
+                        <!-- Table will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize variables
+        let priceOutcomeChart;
+        let currentChartType = 'scatter';
+        
+        // Load initial data
+        loadPriceOutcomeData();
+        
+        // Set up event handlers
+        document.getElementById('applyFilters').addEventListener('click', function() {
+            loadPriceOutcomeData();
+        });
+        
+        document.getElementById('resetFilters').addEventListener('click', function() {
+            document.getElementById('treatmentFilter').value = '';
+            document.getElementById('outcomeFilter').value = '';
+            document.getElementById('organizationFilter').value = '';
+            loadPriceOutcomeData();
+        });
+        
+        document.getElementById('refresh-data').addEventListener('click', function() {
+            loadPriceOutcomeData();
+        });
+        
+        document.getElementById('export-data').addEventListener('click', function() {
+            exportToCSV('price_outcome_analysis.csv');
+        });
+        
+        document.getElementById('toggleTable').addEventListener('click', function() {
+            const tableSection = document.getElementById('detailedDataTable');
+            const toggleButton = document.getElementById('toggleTable');
+            
+            if (tableSection.classList.contains('show')) {
+                tableSection.classList.remove('show');
+                toggleButton.innerHTML = '<i class="fas fa-eye"></i> Show Data';
+            } else {
+                tableSection.classList.add('show');
+                toggleButton.innerHTML = '<i class="fas fa-eye-slash"></i> Hide Data';
+            }
+        });
+        
+        // Chart type dropdown
+        document.querySelectorAll('.chart-type').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const chartType = this.getAttribute('data-type');
+                document.getElementById('chartTypeDropdown').innerHTML = `<i class="fas fa-chart-${chartType}"></i> ${this.textContent}`;
+                currentChartType = chartType;
+                updateChartType(chartType);
+            });
+        });
+        
+        // Function to load price-outcome data
+        function loadPriceOutcomeData() {
+            const treatmentId = document.getElementById('treatmentFilter').value;
+            const outcomeId = document.getElementById('outcomeFilter').value;
+            
+            // Build query parameters
+            let params = new URLSearchParams();
+            if (treatmentId) params.append('treatment_id', treatmentId);
+            if (outcomeId) params.append('outcome_id', outcomeId);
+            
+            // Show loading states
+            document.getElementById('effectivenessTable').querySelector('tbody').innerHTML = `
+                <tr>
+                    <td colspan="3" class="text-center">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        Loading data...
+                    </td>
+                </tr>`;
+                
+            document.getElementById('topTreatmentsContainer').innerHTML = `
+                <div class="col-12 text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading top treatments...</p>
+                </div>`;
+                
+            document.getElementById('avgCostMetric').textContent = '--';
+            document.getElementById('avgOutcomeMetric').textContent = '--';
+            document.getElementById('avgRatioMetric').textContent = '--';
+            
+            // In a real application, this would make an API call with the parameters
+            // For demo purposes, we'll use sample data
+            fetch(`/analytics/price-outcome-data?${params.toString()}`)
+                .then(response => response.json())
+                .then(data => {
+                    updatePriceOutcomeChart(data);
+                    updateCostEffectivenessTable(data);
+                    updateTopTreatments(data);
+                    updateDetailedTable(data);
+                    updateMetrics(data);
+                })
+                .catch(error => {
+                    console.error('Error loading price-outcome data:', error);
+                    alert('Error loading data. Please try again.');
+                });
+        }
+        
+        // Function to update price-outcome chart
+        function updatePriceOutcomeChart(data) {
+            const ctx = document.getElementById('priceOutcomeChart').getContext('2d');
+            
+            // Process data for chart
+            const chartData = {
+                datasets: [{
+                    label: 'Treatments',
+                    data: data.map(item => ({
+                        x: item.cost,
+                        y: item.measurement,
+                        r: Math.sqrt(item.sample_size || 10) / 2, // Radius for bubble chart
+                        treatment: item.treatment,
+                        outcome: item.outcome,
+                        ratio: item.ratio,
+                        organization: item.organization
+                    })),
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            };
+            
+            // Destroy existing chart if it exists
+            if (priceOutcomeChart) {
+                priceOutcomeChart.destroy();
+            }
+            
+            // Create new chart
+            priceOutcomeChart = new Chart(ctx, {
+                type: currentChartType,
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Treatment Cost ($)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Outcome Measure'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const point = context.raw;
+                                    return [
+                                        `Treatment: ${point.treatment}`,
+                                        `Outcome: ${point.outcome}`,
+                                        `Cost: ${point.x.toFixed(2)}`,
+                                        `Value: ${point.y.toFixed(2)}`,
+                                        `Ratio: ${point.ratio.toFixed(2)}`,
+                                        `Organization: ${point.organization || 'N/A'}`,
+                                        `Sample Size: ${point.r * 2 * 2 || 'N/A'}`
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Function to update chart type
+        function updateChartType(type) {
+            if (priceOutcomeChart) {
+                priceOutcomeChart.config.type = type;
+                priceOutcomeChart.update();
+            }
+        }
+        
+        // Function to update cost-effectiveness table
+        function updateCostEffectivenessTable(data) {
+            // Sort data by ratio (ascending)
+            const sortedData = [...data].sort((a, b) => a.ratio - b.ratio);
+            
+            // Generate table rows
+            let html = '';
+            sortedData.forEach((item, index) => {
+                html += `
+                <tr>
+                    <td>${item.treatment}</td>
+                    <td>${item.ratio.toFixed(2)}</td>
+                    <td><span class="badge ${index < 3 ? 'bg-success' : index < 6 ? 'bg-info' : 'bg-secondary'}">#${index + 1}</span></td>
+                </tr>
+                `;
+            });
+            
+            // Update table
+            document.getElementById('effectivenessTable').querySelector('tbody').innerHTML = html || `
+                <tr><td colspan="3" class="text-center">No data available</td></tr>
+            `;
+        }
+        
+        // Function to update top treatments
+        function updateTopTreatments(data) {
+            // Sort data by ratio (ascending)
+            const sortedData = [...data].sort((a, b) => a.ratio - b.ratio);
+            
+            // Get top 3 treatments
+            const topTreatments = sortedData.slice(0, 3);
+            
+            // Generate cards
+            let html = '';
+            topTreatments.forEach((item, index) => {
+                const cardColorClass = index === 0 ? 'border-success' : index === 1 ? 'border-info' : 'border-primary';
+                html += `
+                <div class="col-md-4 mb-4">
+                    <div class="card ${cardColorClass} h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold">${index + 1}. ${item.treatment}</h6>
+                            <span class="badge bg-${index === 0 ? 'success' : index === 1 ? 'info' : 'primary'} fs-6">#${index + 1}</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <h5 class="text-success">${item.cost.toFixed(2)}</h5>
+                                    <small class="text-muted">Cost</small>
+                                </div>
+                                <div class="col-4">
+                                    <h5 class="text-primary">${item.measurement.toFixed(2)}</h5>
+                                    <small class="text-muted">Outcome</small>
+                                </div>
+                                <div class="col-4">
+                                    <h5 class="text-danger">${item.ratio.toFixed(2)}</h5>
+                                    <small class="text-muted">Ratio</small>
+                                </div>
+                            </div>
+                            <p class="card-text mt-3">
+                                <strong>Outcome Measured:</strong> ${item.outcome}<br>
+                                <strong>Organization:</strong> ${item.organization || 'Multiple'}<br>
+                                <strong>Sample Size:</strong> ${item.sample_size || 'N/A'}
+                            </p>
+                        </div>
+                        <div class="card-footer text-center">
+                            <small class="text-muted">Lower ratio indicates better cost-effectiveness</small>
+                        </div>
+                    </div>
+                </div>
+                `;
+            });
+            
+            // Update container
+            document.getElementById('topTreatmentsContainer').innerHTML = html || `
+                <div class="col-12 text-center py-4">
+                    <i class="fas fa-info-circle fa-2x mb-3"></i>
+                    <p>No data available for analysis</p>
+                </div>
+            `;
+        }
+        
+        // Function to update detailed table
+        function updateDetailedTable(data) {
+            // Generate table rows
+            let html = '';
+            data.forEach(item => {
+                html += `
+                <tr>
+                    <td>${item.treatment}</td>
+                    <td>${item.outcome}</td>
+                    <td>${item.measurement.toFixed(2)}</td>
+                    <td>${item.cost.toFixed(2)}</td>
+                    <td>${item.ratio.toFixed(2)}</td>
+                    <td>${item.organization || 'N/A'}</td>
+                    <td>${item.sample_size || 'N/A'}</td>
+                </tr>
+                `;
+            });
+            
+            // Update table
+            document.getElementById('detailedTableBody').innerHTML = html || `
+                <tr><td colspan="7" class="text-center">No data available</td></tr>
+            `;
+        }
+        
+        // Function to update metrics
+        function updateMetrics(data) {
+            if (data.length > 0) {
+                const avgCost = data.reduce((sum, item) => sum + item.cost, 0) / data.length;
+                const avgOutcome = data.reduce((sum, item) => sum + item.measurement, 0) / data.length;
+                const avgRatio = data.reduce((sum, item) => sum + item.ratio, 0) / data.length;
+                
+                document.getElementById('avgCostMetric').textContent = `${avgCost.toFixed(2)}`;
+                document.getElementById('avgOutcomeMetric').textContent = avgOutcome.toFixed(2);
+                document.getElementById('avgRatioMetric').textContent = avgRatio.toFixed(2);
+            } else {
+                document.getElementById('avgCostMetric').textContent = '--';
+                document.getElementById('avgOutcomeMetric').textContent = '--';
+                document.getElementById('avgRatioMetric').textContent = '--';
+            }
+        }
+        
+        // Function to export data to CSV
+        function exportToCSV(filename) {
+            // Get detailed table data
+            const table = document.getElementById('detailedTableBody');
+            const rows = table.querySelectorAll('tr');
+            
+            if (rows.length === 0 || (rows.length === 1 && rows[0].querySelector('td').textContent === 'No data available')) {
+                alert('No data available to export');
+                return;
+            }
+            
+            let csv = [];
+            csv.push('Treatment,Outcome Measure,Outcome Value,Treatment Cost,Cost-Effectiveness Ratio,Organization,Sample Size');
+            
+            rows.forEach(row => {
+                const cols = row.querySelectorAll('td');
+                if (cols.length > 1) { // Skip "no data" row
+                    const rowData = [
+                        `"${cols[0].textContent}"`,
+                        `"${cols[1].textContent}"`,
+                        cols[2].textContent,
+                        cols[3].textContent.replace(', ''),
+                        cols[4].textContent,
+                        `"${cols[5].textContent}"`,
+                        cols[6].textContent
+                    ];
+                    csv.push(rowData.join(','));
+                }
+            });
+            
+            // Download CSV
+            const csvContent = csv.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    });
+</script>
+{% endblock %}

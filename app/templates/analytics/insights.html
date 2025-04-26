@@ -1,0 +1,566 @@
+<!-- app/templates/analytics/insights.html - Analytics insights page -->
+{% extends 'base.html' %}
+
+{% block title %}Analytics Insights | HealthEconomics360{% endblock %}
+
+{% block content %}
+<div class="container-fluid pt-3">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="fas fa-brain me-2"></i> Analytics Insights</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="refresh-insights">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="export-insights">
+                    <i class="fas fa-download"></i> Export
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-filter me-2"></i> Filter Insights</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="insightTypeFilter" class="form-label">Insight Type</label>
+                    <select class="form-select" id="insightTypeFilter">
+                        <option value="">All Types</option>
+                        <option value="pricing">Pricing</option>
+                        <option value="resource">Resource</option>
+                        <option value="outcome">Outcome</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="organizationFilter" class="form-label">Organization</label>
+                    <select class="form-select" id="organizationFilter">
+                        <option value="">All Organizations</option>
+                        <!-- Organizations would be loaded dynamically -->
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="dateRangeFilter" class="form-label">Date Range</label>
+                    <select class="form-select" id="dateRangeFilter">
+                        <option value="7">Last 7 Days</option>
+                        <option value="30" selected>Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                        <option value="180">Last 6 Months</option>
+                        <option value="365">Last Year</option>
+                        <option value="all">All Time</option>
+                    </select>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end mt-3">
+                <button type="button" class="btn btn-primary" id="applyFilters">
+                    <i class="fas fa-search me-2"></i> Apply Filters
+                </button>
+                <button type="button" class="btn btn-secondary ms-2" id="resetFilters">
+                    <i class="fas fa-undo me-2"></i> Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Insights Dashboard -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-white">Total Insights</h6>
+                            <h2 class="mb-0" id="totalInsightsCount">{{ insights|length }}</h2>
+                        </div>
+                        <div>
+                            <i class="fas fa-lightbulb fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Insights by Type</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="position: relative; height:200px;">
+                        <canvas id="insightTypesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Activity</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush" id="recentActivityList">
+                        <li class="list-group-item">
+                            <small class="text-muted">Today, 10:23 AM</small>
+                            <p class="mb-0">New pricing insight generated</p>
+                        </li>
+                        <li class="list-group-item">
+                            <small class="text-muted">Yesterday, 2:45 PM</small>
+                            <p class="mb-0">Resource allocation insight updated</p>
+                        </li>
+                        <li class="list-group-item">
+                            <small class="text-muted">Apr 23, 2025</small>
+                            <p class="mb-0">3 outcome insights generated</p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <!-- Search Bar -->
+            <div class="input-group mb-4">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" class="form-control" placeholder="Search insights..." id="insightSearch">
+                <button class="btn btn-primary" type="button" id="searchButton">Search</button>
+            </div>
+            
+            <!-- Insights Grid -->
+            <div class="row" id="insightsContainer">
+                {% for insight in insights %}
+                <div class="col-md-6 mb-4 insight-card" 
+                     data-type="{{ insight.insight_type }}" 
+                     data-organization="{{ insight.organization_id }}"
+                     data-date="{{ insight.created_at|date }}">
+                    <div class="card h-100 border-{{ 'primary' if insight.insight_type == 'pricing' else 'success' if insight.insight_type == 'resource' else 'info' }}">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">{{ insight.title }}</h5>
+                            <span class="badge bg-{{ 'primary' if insight.insight_type == 'pricing' else 'success' if insight.insight_type == 'resource' else 'info' }}">
+                                {{ insight.insight_type|capitalize }}
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <p>{{ insight.description }}</p>
+                            
+                            {% if insight.data %}
+                                <div class="insight-metrics mb-3">
+                                    {% if insight.insight_type == 'pricing' and insight.data.get('variation_pct') %}
+                                    <div class="alert alert-primary">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Price Variation:</span>
+                                            <strong>{{ (insight.data.get('variation_pct', 0) * 100)|round(1) }}%</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Min Price:</span>
+                                            <strong>${{ insight.data.get('min_price', 0)|round(2) }}</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Max Price:</span>
+                                            <strong>${{ insight.data.get('max_price', 0)|round(2) }}</strong>
+                                        </div>
+                                    </div>
+                                    {% elif insight.insight_type == 'resource' and insight.data.get('total_excess_cost') %}
+                                    <div class="alert alert-success">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Excess Cost:</span>
+                                            <strong>${{ insight.data.get('total_excess_cost', 0)|round(2) }}</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Resources:</span>
+                                            <strong>{{ insight.data.get('resource_count', 0) }}</strong>
+                                        </div>
+                                    </div>
+                                    {% elif insight.insight_type == 'outcome' and insight.data.get('potential_savings') %}
+                                    <div class="alert alert-info">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Potential Savings:</span>
+                                            <strong>${{ insight.data.get('potential_savings', 0)|round(2) }}</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Outcome:</span>
+                                            <strong>{{ insight.data.get('outcome', 'N/A') }}</strong>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            
+                            <div class="text-muted">
+                                <small>
+                                    <i class="fas fa-calendar-alt me-1"></i> {{ insight.created_at.strftime('%B %d, %Y') }}
+                                    {% if insight.organization %}
+                                    <i class="fas fa-hospital ms-2 me-1"></i> {{ insight.organization.name }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="card-footer d-flex justify-content-between align-items-center">
+                            <a href="{{ url_for('analytics.insight_detail', insight_id=insight.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye me-1"></i> View Details
+                            </a>
+                            <div>
+                                <button class="btn btn-sm btn-outline-secondary insight-action" data-action="share" data-id="{{ insight.id }}">
+                                    <i class="fas fa-share-alt"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary insight-action" data-action="download" data-id="{{ insight.id }}">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-12 text-center py-5">
+                    <i class="fas fa-info-circle fa-3x mb-3 text-muted"></i>
+                    <h5>No insights available</h5>
+                    <p class="text-muted">Try adjusting your filters or generating new insights.</p>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            <nav aria-label="Insights pagination" id="insightsPagination">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+                    </li>
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                    <li class="page-item">
+                        <a class="page-link" href="#">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Share Insight Modal -->
+<div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shareModalLabel">Share Insight</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label for="shareRecipient" class="form-label">Recipient Email</label>
+                        <input type="email" class="form-control" id="shareRecipient" placeholder="colleague@example.com">
+                    </div>
+                    <div class="mb-3">
+                        <label for="shareMessage" class="form-label">Message (Optional)</label>
+                        <textarea class="form-control" id="shareMessage" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="includeData" checked>
+                        <label class="form-check-label" for="includeData">Include detailed data</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="sendInsightBtn">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize type chart
+        initInsightTypesChart();
+        
+        // Set up event handlers
+        document.getElementById('applyFilters').addEventListener('click', function() {
+            filterInsights();
+        });
+        
+        document.getElementById('resetFilters').addEventListener('click', function() {
+            document.getElementById('insightTypeFilter').value = '';
+            document.getElementById('organizationFilter').value = '';
+            document.getElementById('dateRangeFilter').value = '30';
+            filterInsights();
+        });
+        
+        document.getElementById('searchButton').addEventListener('click', function() {
+            searchInsights();
+        });
+        
+        document.getElementById('insightSearch').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                searchInsights();
+            }
+        });
+        
+        document.getElementById('refresh-insights').addEventListener('click', function() {
+            window.location.reload();
+        });
+        
+        document.getElementById('export-insights').addEventListener('click', function() {
+            exportInsights();
+        });
+        
+        // Set up share and download buttons
+        document.querySelectorAll('.insight-action').forEach(button => {
+            button.addEventListener('click', function() {
+                const action = this.getAttribute('data-action');
+                const insightId = this.getAttribute('data-id');
+                
+                if (action === 'share') {
+                    showShareModal(insightId);
+                } else if (action === 'download') {
+                    downloadInsight(insightId);
+                }
+            });
+        });
+        
+        // Send button in share modal
+        document.getElementById('sendInsightBtn').addEventListener('click', function() {
+            const recipient = document.getElementById('shareRecipient').value;
+            
+            if (!recipient) {
+                alert('Please enter a recipient email address.');
+                return;
+            }
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('shareModal'));
+            modal.hide();
+            
+            // Show success message
+            alert(`Insight has been shared with ${recipient}`);
+        });
+        
+        // Initialize insight types chart
+        function initInsightTypesChart() {
+            const ctx = document.getElementById('insightTypesChart').getContext('2d');
+            
+            // Count insights by type
+            const insightCards = document.querySelectorAll('.insight-card');
+            const typeCounts = {
+                pricing: 0,
+                resource: 0,
+                outcome: 0
+            };
+            
+            insightCards.forEach(card => {
+                const type = card.getAttribute('data-type');
+                if (typeCounts.hasOwnProperty(type)) {
+                    typeCounts[type]++;
+                }
+            });
+            
+            // Create chart
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pricing', 'Resource', 'Outcome'],
+                    datasets: [{
+                        data: [typeCounts.pricing, typeCounts.resource, typeCounts.outcome],
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(40, 167, 69, 0.7)',
+                            'rgba(23, 162, 184, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(40, 167, 69, 1)',
+                            'rgba(23, 162, 184, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Filter insights based on selected criteria
+        function filterInsights() {
+            const typeFilter = document.getElementById('insightTypeFilter').value;
+            const organizationFilter = document.getElementById('organizationFilter').value;
+            const dateRangeFilter = document.getElementById('dateRangeFilter').value;
+            
+            const insightCards = document.querySelectorAll('.insight-card');
+            let visibleCount = 0;
+            
+            insightCards.forEach(card => {
+                const type = card.getAttribute('data-type');
+                const organization = card.getAttribute('data-organization');
+                const date = new Date(card.getAttribute('data-date'));
+                
+                // Check if card matches all filters
+                let matchesType = !typeFilter || type === typeFilter;
+                let matchesOrganization = !organizationFilter || organization === organizationFilter;
+                let matchesDate = true;
+                
+                // Date range filter
+                if (dateRangeFilter && dateRangeFilter !== 'all') {
+                    const days = parseInt(dateRangeFilter);
+                    const cutoffDate = new Date();
+                    cutoffDate.setDate(cutoffDate.getDate() - days);
+                    matchesDate = date >= cutoffDate;
+                }
+                
+                // Show or hide card
+                if (matchesType && matchesOrganization && matchesDate) {
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            // Update count
+            document.getElementById('totalInsightsCount').textContent = visibleCount;
+            
+            // Show "no results" message if needed
+            const noResultsMessage = document.querySelector('.col-12.text-center.py-5');
+            const insightsContainer = document.getElementById('insightsContainer');
+            
+            if (visibleCount === 0 && !noResultsMessage) {
+                insightsContainer.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <i class="fas fa-search fa-3x mb-3 text-muted"></i>
+                        <h5>No insights match your filters</h5>
+                        <p class="text-muted">Try adjusting your search criteria.</p>
+                    </div>
+                `;
+            } else if (visibleCount > 0 && noResultsMessage) {
+                noResultsMessage.remove();
+            }
+            
+            // Update pagination if needed
+            updatePagination(visibleCount);
+        }
+        
+        // Search insights
+        function searchInsights() {
+            const searchTerm = document.getElementById('insightSearch').value.toLowerCase();
+            const insightCards = document.querySelectorAll('.insight-card');
+            let visibleCount = 0;
+            
+            insightCards.forEach(card => {
+                const cardText = card.textContent.toLowerCase();
+                
+                if (cardText.includes(searchTerm)) {
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            // Update count
+            document.getElementById('totalInsightsCount').textContent = visibleCount;
+            
+            // Show "no results" message if needed
+            const noResultsMessage = document.querySelector('.col-12.text-center.py-5');
+            const insightsContainer = document.getElementById('insightsContainer');
+            
+            if (visibleCount === 0 && !noResultsMessage) {
+                insightsContainer.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <i class="fas fa-search fa-3x mb-3 text-muted"></i>
+                        <h5>No insights match your search</h5>
+                        <p class="text-muted">Try different search terms.</p>
+                    </div>
+                `;
+            } else if (visibleCount > 0 && noResultsMessage) {
+                noResultsMessage.remove();
+            }
+            
+            // Update pagination
+            updatePagination(visibleCount);
+        }
+        
+        // Show share modal
+        function showShareModal(insightId) {
+            // Reset form
+            document.getElementById('shareRecipient').value = '';
+            document.getElementById('shareMessage').value = '';
+            document.getElementById('includeData').checked = true;
+            
+            // Store insight ID (could be used when sending)
+            document.getElementById('sendInsightBtn').setAttribute('data-insight-id', insightId);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('shareModal'));
+            modal.show();
+        }
+        
+        // Download insight
+        function downloadInsight(insightId) {
+            // In a real application, this would make an API call to download the insight
+            alert(`Downloading insight ${insightId}...`);
+        }
+        
+        // Export insights
+        function exportInsights() {
+            // Get visible insights
+            const visibleInsights = document.querySelectorAll('.insight-card[style=""]');
+            
+            if (visibleInsights.length === 0) {
+                alert('No insights available to export');
+                return;
+            }
+            
+            // In a real application, this would export the visible insights
+            alert(`Exporting ${visibleInsights.length} insights...`);
+        }
+        
+        // Update pagination based on visible insights
+        function updatePagination(visibleCount) {
+            const pagination = document.getElementById('insightsPagination');
+            
+            if (visibleCount <= 10) {
+                pagination.style.display = 'none';
+            } else {
+                pagination.style.display = 'block';
+                
+                // Calculate number of pages
+                const pageCount = Math.ceil(visibleCount / 10);
+                
+                // Update pagination links
+                const paginationLinks = pagination.querySelector('ul');
+                let html = `
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+                    </li>
+                `;
+                
+                for (let i = 1; i <= pageCount; i++) {
+                    html += `
+                        <li class="page-item ${i === 1 ? 'active' : ''}">
+                            <a class="page-link" href="#">${i}</a>
+                        </li>
+                    `;
+                }
+                
+                html += `
+                    <li class="page-item">
+                        <a class="page-link" href="#">Next</a>
+                    </li>
+                `;
+                
+                paginationLinks.innerHTML = html;
+            }
+        }
+    });
+</script>
+{% endblock %}
