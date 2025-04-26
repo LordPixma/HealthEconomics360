@@ -1,0 +1,20 @@
+<!-- app/templates/errors/404.html - 404 Not Found error page -->
+{% extends 'base.html' %}
+{% block title %}404 Not Found | HealthEconomics360{% endblock %}
+{% block content %}
+<div class="container-fluid pt-5">
+    <div class="text-center">
+        <div class="error mx-auto" data-text="404">
+            <h1 class="display-1 fw-bold text-primary">404</h1>
+        </div>
+        <p class="lead text-gray-800 mb-3">Page Not Found</p>
+        <p class="text-gray-500 mb-4">It seems the page you're looking for doesn't exist or may have been moved.</p>
+        <div class="mb-5">
+            <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">
+                <i class="fas fa-arrow-left me-2"></i>Return to Dashboard
+            </a>
+        </div>
+        <img src="{{ url_for('static', filename='img/undraw_404.svg') }}" alt="404 Illustration" class="img-fluid" style="max-width: 500px;">
+    </div>
+</div>
+{% endblock %}

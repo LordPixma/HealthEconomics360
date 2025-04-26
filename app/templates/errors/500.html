@@ -1,0 +1,25 @@
+<!-- app/templates/errors/500.html - 500 Internal Server Error page -->
+{% extends 'base.html' %}
+
+{% block title %}500 Internal Server Error | HealthEconomics360{% endblock %}
+
+{% block content %}
+<div class="container-fluid pt-5">
+    <div class="text-center">
+        <div class="error mx-auto" data-text="500">
+            <h1 class="display-1 fw-bold text-danger">500</h1>
+        </div>
+        <p class="lead text-gray-800 mb-3">Internal Server Error</p>
+        <p class="text-gray-500 mb-4">We're sorry, something went wrong on our end. Our team has been notified about this issue.</p>
+        <div class="mb-5">
+            <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">
+                <i class="fas fa-arrow-left me-2"></i>Return to Dashboard
+            </a>
+            <button class="btn btn-outline-secondary ms-2" onclick="window.location.reload();">
+                <i class="fas fa-sync-alt me-2"></i>Try Again
+            </button>
+        </div>
+        <img src="{{ url_for('static', filename='img/undraw_server_down.svg') }}" alt="Server Error Illustration" class="img-fluid" style="max-width: 500px;">
+    </div>
+</div>
+{% endblock %}

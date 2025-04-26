@@ -1,0 +1,453 @@
+<!-- app/templates/analytics/index.html - Analytics dashboard main page -->
+{% extends 'base.html' %}
+
+{% block title %}Analytics Dashboard | HealthEconomics360{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid pt-3">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="fas fa-chart-line me-2"></i> Analytics Dashboard</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="refresh-analytics">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="export-analytics">
+                    <i class="fas fa-download"></i> Export
+                </button>
+            </div>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="timeRangeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-calendar"></i> This Month
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="timeRangeDropdown">
+                    <li><a class="dropdown-item time-range" data-range="week" href="#">This Week</a></li>
+                    <li><a class="dropdown-item time-range" data-range="month" href="#">This Month</a></li>
+                    <li><a class="dropdown-item time-range" data-range="quarter" href="#">This Quarter</a></li>
+                    <li><a class="dropdown-item time-range" data-range="year" href="#">This Year</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item time-range" data-range="custom" href="#">Custom Range</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Price-Outcome Analysis</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalAnalysesCount">--</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-balance-scale fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Waste Identified</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="wasteIdentifiedCount">$--</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-trash-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Recommendations</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="recommendationsCount">--</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-lightbulb fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Potential Savings</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="potentialSavingsCount">$--</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Navigation Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Price vs. Outcome Analysis</h6>
+                    <a href="{{ url_for('analytics.price_outcome_analysis') }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    <p>Analyze the relationship between treatment costs and healthcare outcomes. Identify the most cost-effective treatments and interventions.</p>
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="priceOutcomeChart"></canvas>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{{ url_for('analytics.price_outcome_analysis') }}" class="btn btn-outline-primary btn-block">
+                            <i class="fas fa-chart-scatter me-2"></i>View Detailed Analysis
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-success">Waste Analysis</h6>
+                    <a href="{{ url_for('analytics.waste_analysis') }}" class="btn btn-sm btn-success">
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    <p>Identify potential waste in resource allocation. Pinpoint inefficient spending and opportunities for resource optimization.</p>
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="wasteAnalysisChart"></canvas>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{{ url_for('analytics.waste_analysis') }}" class="btn btn-outline-success btn-block">
+                            <i class="fas fa-search-dollar me-2"></i>View Waste Analysis
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Latest Insights -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Latest Insights</h6>
+            <a href="{{ url_for('analytics.insights') }}" class="btn btn-sm btn-primary">View All</a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Date</th>
+                            <th>Impact</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for insight in insights %}
+                        <tr>
+                            <td>{{ insight.title }}</td>
+                            <td><span class="badge bg-{{ 'primary' if insight.insight_type == 'pricing' else 'success' if insight.insight_type == 'resource' else 'info' }}">{{ insight.insight_type|capitalize }}</span></td>
+                            <td>{{ insight.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {% if insight.data %}
+                                    {% if insight.insight_type == 'pricing' and insight.data.get('variation_pct') %}
+                                        {{ (insight.data.get('variation_pct', 0) * 100)|round(1) }}% price variation
+                                    {% elif insight.insight_type == 'resource' and insight.data.get('total_excess_cost') %}
+                                        ${{ insight.data.get('total_excess_cost')|round(2) }} potential savings
+                                    {% elif insight.insight_type == 'outcome' and insight.data.get('potential_savings') %}
+                                        ${{ insight.data.get('potential_savings')|round(2) }} potential savings
+                                    {% else %}
+                                        Analysis available
+                                    {% endif %}
+                                {% else %}
+                                    --
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('analytics.insight_detail', insight_id=insight.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4">
+                                <i class="fas fa-info-circle me-2"></i>No insights available yet.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generate Recommendations Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Generate Optimization Recommendations</h6>
+        </div>
+        <div class="card-body">
+            <p>Generate data-driven recommendations to optimize costs, improve outcomes, and reduce waste.</p>
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="form-group">
+                        <label for="organization-select">Select Organization (Optional)</label>
+                        <select class="form-select" id="organization-select">
+                            <option value="">All Organizations</option>
+                            <!-- Organization options would be dynamically loaded here -->
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button id="generate-recommendations" class="btn btn-primary w-100">
+                        <i class="fas fa-lightbulb me-2"></i>Generate Recommendations
+                    </button>
+                </div>
+            </div>
+            <div id="recommendation-result" class="mt-3 d-none">
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i><span id="recommendation-message"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load analytics data
+        loadAnalyticsData();
+        
+        // Set up event handlers
+        document.getElementById('refresh-analytics').addEventListener('click', function() {
+            loadAnalyticsData();
+        });
+        
+        document.getElementById('generate-recommendations').addEventListener('click', function() {
+            generateRecommendations();
+        });
+        
+        // Time range filters
+        document.querySelectorAll('.time-range').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const range = this.getAttribute('data-range');
+                document.getElementById('timeRangeDropdown').innerHTML = `<i class="fas fa-calendar"></i> ${this.textContent}`;
+                loadAnalyticsData(range);
+            });
+        });
+        
+        // Load organizations for select dropdown
+        loadOrganizations();
+    });
+    
+    function loadAnalyticsData(timeRange = 'month') {
+        // Show loading state
+        document.getElementById('totalAnalysesCount').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        document.getElementById('wasteIdentifiedCount').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        document.getElementById('recommendationsCount').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        document.getElementById('potentialSavingsCount').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        
+        // In a real app, this would make an API call with the timeRange parameter
+        // For demo purposes, we'll simulate with setTimeout
+        setTimeout(() => {
+            // Update summary metrics with sample data
+            document.getElementById('totalAnalysesCount').textContent = '47';
+            document.getElementById('wasteIdentifiedCount').textContent = '$283,500';
+            document.getElementById('recommendationsCount').textContent = '12';
+            document.getElementById('potentialSavingsCount').textContent = '$427,800';
+            
+            // Initialize charts
+            initializePriceOutcomeChart();
+            initializeWasteAnalysisChart();
+        }, 1000);
+    }
+    
+    function loadOrganizations() {
+        // In a real app, this would fetch organizations from the API
+        // For demo purposes, we'll add some sample data
+        const select = document.getElementById('organization-select');
+        const organizations = [
+            { id: 1, name: 'General Hospital' },
+            { id: 2, name: 'City Medical Center' },
+            { id: 3, name: 'Regional Health Network' },
+            { id: 4, name: 'University Medical Center' }
+        ];
+        
+        organizations.forEach(org => {
+            const option = document.createElement('option');
+            option.value = org.id;
+            option.textContent = org.name;
+            select.appendChild(option);
+        });
+    }
+    
+    function generateRecommendations() {
+        const organizationId = document.getElementById('organization-select').value;
+        const button = document.getElementById('generate-recommendations');
+        const resultDiv = document.getElementById('recommendation-result');
+        const messageSpan = document.getElementById('recommendation-message');
+        
+        // Show loading state
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating...';
+        resultDiv.classList.add('d-none');
+        
+        // In a real app, this would make an API call
+        // For demo purposes, we'll simulate with setTimeout
+        setTimeout(() => {
+            // Show success message
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-lightbulb me-2"></i>Generate Recommendations';
+            resultDiv.classList.remove('d-none');
+            
+            const count = Math.floor(Math.random() * 5) + 1;
+            messageSpan.textContent = `${count} new recommendations generated successfully!`;
+            
+            // Update recommendation count
+            const currentCount = parseInt(document.getElementById('recommendationsCount').textContent);
+            document.getElementById('recommendationsCount').textContent = currentCount + count;
+        }, 2000);
+    }
+    
+    function initializePriceOutcomeChart() {
+        const ctx = document.getElementById('priceOutcomeChart').getContext('2d');
+        
+        // Sample data for price-outcome analysis
+        const data = {
+            labels: ['Treatment A', 'Treatment B', 'Treatment C', 'Treatment D', 'Treatment E'],
+            datasets: [
+                {
+                    label: 'Cost ($)',
+                    data: [1200, 800, 1500, 650, 950],
+                    backgroundColor: 'rgba(78, 115, 223, 0.5)',
+                    borderColor: 'rgba(78, 115, 223, 1)',
+                    borderWidth: 1,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Outcome Score',
+                    data: [75, 65, 90, 50, 85],
+                    backgroundColor: 'rgba(28, 200, 138, 0.5)',
+                    borderColor: 'rgba(28, 200, 138, 1)',
+                    borderWidth: 1,
+                    yAxisID: 'y1',
+                    type: 'line'
+                }
+            ]
+        };
+        
+        // Create the chart
+        new Chart(ctx, {
+            type: 'bar',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Cost ($)'
+                        }
+                    },
+                    y1: {
+                        position: 'right',
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Outcome Score'
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function initializeWasteAnalysisChart() {
+        const ctx = document.getElementById('wasteAnalysisChart').getContext('2d');
+        
+        // Sample data for waste analysis
+        const data = {
+            labels: ['Department A', 'Department B', 'Department C', 'Department D', 'Department E'],
+            datasets: [{
+                label: 'Identified Waste ($)',
+                data: [75000, 45000, 65000, 38000, 60500],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(153, 102, 255, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)'
+                ],
+                borderWidth: 1
+            }]
+        };
+        
+        // Create the chart
+        new Chart(ctx, {
+            type: 'pie',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                return `${label}: $${value.toLocaleString()}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}
