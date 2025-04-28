@@ -1,0 +1,1229 @@
+<!-- app/templates/analytics/insight_detail.html - Detail view for a specific analytics insight -->
+{% extends 'base.html' %}
+
+{% block title %}Insight Detail | HealthEconomics360{% endblock %}
+
+{% block content %}
+<div class="container-fluid pt-3">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-lightbulb me-2"></i> Insight Details
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="print-insight">
+                    <i class="fas fa-print"></i> Print
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="export-insight">
+                    <i class="fas fa-download"></i> Export
+                </button>
+            </div>
+            <a href="{{ url_for('analytics.insights') }}" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Insights
+            </a>
+        </div>
+    </div>
+
+    <!-- Insight Header -->
+    <div class="card mb-4">
+        <div class="card-header bg-{{ 'primary' if insight.insight_type == 'pricing' else 'success' if insight.insight_type == 'resource' else 'info' }} text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">{{ insight.title }}</h3>
+                <span class="badge bg-white text-{{ 'primary' if insight.insight_type == 'pricing' else 'success' if insight.insight_type == 'resource' else 'info' }}">
+                    {{ insight.insight_type|capitalize }}
+                </span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <h5 class="card-title">Description</h5>
+                    <p class="card-text lead">{{ insight.description }}</p>
+                    
+                    <div class="insight-metadata mt-4">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong><i class="fas fa-calendar-alt me-2"></i> Created:</strong> {{ insight.created_at.strftime('%B %d, %Y at %H:%M') }}</p>
+                                {% if insight.organization %}
+                                <p><strong><i class="fas fa-hospital me-2"></i> Organization:</strong> {{ insight.organization.name }}</p>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <p>
+                                    <strong><i class="fas fa-tag me-2"></i> Type:</strong> 
+                                    <span class="badge bg-{{ 'primary' if insight.insight_type == 'pricing' else 'success' if insight.insight_type == 'resource' else 'info' }}">
+                                        {{ insight.insight_type|capitalize }}
+                                    </span>
+                                </p>
+                                {% if insight.data and insight.data.get('impact') %}
+                                <p><strong><i class="fas fa-chart-line me-2"></i> Impact:</strong> {{ insight.data.get('impact') }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Key Metrics</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if insight.insight_type == 'pricing' and insight.data %}
+                                <div class="metric-item">
+                                    <span class="metric-label">Price Variation</span>
+                                    <span class="metric-value text-primary">{{ (insight.data.get('variation_pct', 0) * 100)|round(1) }}%</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">Min Price</span>
+                                    <span class="metric-value text-success">${{ insight.data.get('min_price', 0)|round(2) }}</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">Max Price</span>
+                                    <span class="metric-value text-danger">${{ insight.data.get('max_price', 0)|round(2) }}</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">Avg Price</span>
+                                    <span class="metric-value text-info">${{ insight.data.get('avg_price', 0)|round(2) }}</span>
+                                </div>
+                            {% elif insight.insight_type == 'resource' and insight.data %}
+                                <div class="metric-item">
+                                    <span class="metric-label">Excess Cost</span>
+                                    <span class="metric-value text-danger">${{ insight.data.get('total_excess_cost', 0)|round(2) }}</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">Resources Affected</span>
+                                    <span class="metric-value text-primary">{{ insight.data.get('resource_count', 0) }}</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">Optimization Potential</span>
+                                    <span class="metric-value text-success">{{ insight.data.get('optimization_potential', 0)|round(1) }}%</span>
+                                </div>
+                            {% elif insight.insight_type == 'outcome' and insight.data %}
+                                <div class="metric-item">
+                                    <span class="metric-label">Potential Savings</span>
+                                    <span class="metric-value text-success">${{ insight.data.get('potential_savings', 0)|round(2) }}</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">Outcome Measure</span>
+                                    <span class="metric-value text-primary">{{ insight.data.get('outcome', 'N/A') }}</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">Efficiency Gap</span>
+                                    <span class="metric-value text-info">{{ insight.data.get('efficiency_gap', 0)|round(1) }}%</span>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-info mb-0">
+                                    <i class="fas fa-info-circle me-2"></i> No detailed metrics available for this insight.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Insight Visualization -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i> Data Visualization</h5>
+                </div>
+                <div class="card-body">
+                    <div id="insightVisualization" style="height: 400px;">
+                        {% if insight.insight_type == 'pricing' %}
+                            <canvas id="pricingChart"></canvas>
+                        {% elif insight.insight_type == 'resource' %}
+                            <canvas id="resourceChart"></canvas>
+                        {% elif insight.insight_type == 'outcome' %}
+                            <canvas id="outcomeChart"></canvas>
+                        {% else %}
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-info-circle me-2"></i> No visualization available for this insight type.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i> 
+                        {% if insight.insight_type == 'pricing' %}
+                            Chart shows price comparison across different regions or suppliers.
+                        {% elif insight.insight_type == 'resource' %}
+                            Chart shows resource allocation and potential waste identification.
+                        {% elif insight.insight_type == 'outcome' %}
+                            Chart shows treatment comparison based on cost and outcome measures.
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-list-ul me-2"></i> Related Data</h5>
+                </div>
+                <div class="card-body">
+                    {% if insight.insight_type == 'pricing' and insight.data %}
+                        <h6>Price Comparison</h6>
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Region</th>
+                                    <th>Price</th>
+                                    <th>Variance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if insight.data.get('region_prices') %}
+                                    {% for region in insight.data.get('region_prices', []) %}
+                                        <tr>
+                                            <td>{{ region.name }}</td>
+                                            <td>${{ region.price|round(2) }}</td>
+                                            <td class="{{ 'text-danger' if region.variance > 0 else 'text-success' }}">
+                                                {{ region.variance|round(1) }}%
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="3" class="text-center">No regional data available</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    {% elif insight.insight_type == 'resource' and insight.data %}
+                        <h6>Resource Waste Breakdown</h6>
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Resource</th>
+                                    <th>Excess Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if insight.data.get('resources') %}
+                                    {% for resource in insight.data.get('resources', [])[:5] %}
+                                        <tr>
+                                            <td>{{ resource.name }}</td>
+                                            <td>${{ resource.excess_cost|round(2) }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                    {% if insight.data.get('resources')|length > 5 %}
+                                        <tr>
+                                            <td colspan="2" class="text-center">
+                                                <em>And {{ insight.data.get('resources')|length - 5 }} more resources...</em>
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="2" class="text-center">No resource data available</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    {% elif insight.insight_type == 'outcome' and insight.data %}
+                        <h6>Treatment Comparison</h6>
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Treatment</th>
+                                    <th>Effectiveness</th>
+                                    <th>Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if insight.data.get('best_treatment') %}
+                                    <tr class="table-success">
+                                        <td>{{ insight.data.get('best_treatment').name }}</td>
+                                        <td>{{ insight.data.get('best_treatment').effectiveness|round(2) }}</td>
+                                        <td>${{ insight.data.get('best_treatment').cost|round(2) }}</td>
+                                    </tr>
+                                {% endif %}
+                                {% if insight.data.get('worst_treatment') %}
+                                    <tr class="table-danger">
+                                        <td>{{ insight.data.get('worst_treatment').name }}</td>
+                                        <td>{{ insight.data.get('worst_treatment').effectiveness|round(2) }}</td>
+                                        <td>${{ insight.data.get('worst_treatment').cost|round(2) }}</td>
+                                    </tr>
+                                {% endif %}
+                                {% if not insight.data.get('best_treatment') and not insight.data.get('worst_treatment') %}
+                                    <tr>
+                                        <td colspan="3" class="text-center">No treatment data available</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <div class="alert alert-info mb-0">
+                            <i class="fas fa-info-circle me-2"></i> No related data available for this insight.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations & Actions -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i> Recommendations</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% if insight.insight_type == 'pricing' %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">Optimize Procurement Strategy</h6>
+                                    <span class="badge bg-success">High Impact</span>
+                                </div>
+                                <p class="mb-1">Leverage price disparity data to negotiate better prices with suppliers. Target regions or vendors with higher price points for immediate savings.</p>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">Consolidate Purchasing</h6>
+                                    <span class="badge bg-primary">Medium Impact</span>
+                                </div>
+                                <p class="mb-1">Consolidate purchasing across departments or facilities to increase volume and leverage better pricing terms.</p>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">Establish Price Benchmarking</h6>
+                                    <span class="badge bg-info">Long-term</span>
+                                </div>
+                                <p class="mb-1">Implement ongoing price benchmarking to continuously monitor and optimize pricing across all suppliers and regions.</p>
+                            </div>
+                        {% elif insight.insight_type == 'resource' %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">Reduce Resource Waste</h6>
+                                    <span class="badge bg-success">High Impact</span>
+                                </div>
+                                <p class="mb-1">Implement targeted waste reduction measures for the identified resources with highest excess costs.</p>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">Optimize Resource Allocation</h6>
+                                    <span class="badge bg-primary">Medium Impact</span>
+                                </div>
+                                <p class="mb-1">Reallocate resources based on actual usage patterns and needs across departments.</p>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">Implement Monitoring Systems</h6>
+                                    <span class="badge bg-info">Long-term</span>
+                                </div>
+                                <p class="mb-1">Develop resource usage monitoring systems to proactively identify and prevent waste.</p>
+                            </div>
+                        {% elif insight.insight_type == 'outcome' %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">Prioritize Cost-Effective Treatments</h6>
+                                    <span class="badge bg-success">High Impact</span>
+                                </div>
+                                <p class="mb-1">Shift treatment protocols to prioritize the most cost-effective options where clinically appropriate.</p>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">Standardize Outcome Measurements</h6>
+                                    <span class="badge bg-primary">Medium Impact</span>
+                                </div>
+                                <p class="mb-1">Implement standardized outcome measurement protocols across all treatments for better comparability.</p>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">Continuous Monitoring</h6>
+                                    <span class="badge bg-info">Long-term</span>
+                                </div>
+                                <p class="mb-1">Establish ongoing monitoring of treatment outcomes and costs to continuously optimize the treatment mix.</p>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-info-circle me-2"></i> No recommendations available for this insight.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-tasks me-2"></i> Action Plan</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        {% if insight.insight_type == 'pricing' %}
+                            <div class="timeline-item">
+                                <div class="timeline-badge bg-primary">
+                                    <i class="fas fa-1"></i>
+                                </div>
+                                <div class="timeline-panel">
+                                    <div class="timeline-heading">
+                                        <h6 class="timeline-title">Immediate: Data Validation</h6>
+                                    </div>
+                                    <div class="timeline-body">
+                                        <p>Validate price data across regions and suppliers to confirm disparity findings. Identify specific suppliers or contracts for negotiation.</p>
+                                    </div>
+                                    <div class="timeline-footer">
+                                        <span class="badge bg-secondary">1-2 weeks</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-badge bg-primary">
+                                    <i class="fas fa-2"></i>
+                                </div>
+                                <div class="timeline-panel">
+                                    <div class="timeline-heading">
+                                        <h6 class="timeline-title">Short-term: Negotiation</h6>
+                                    </div>
+                                    <div class="timeline-body">
+                                        <p>Conduct negotiations with suppliers showing highest price disparities. Target achieving prices aligned with lowest observed in comparable regions.</p>
+                                    </div>
+                                    <div class="timeline-footer">
+                                        <span class="badge bg-secondary">1-3 months</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-badge bg-primary">
+                                    <i class="fas fa-3"></i>
+                                </div>
+                                <div class="timeline-panel">
+                                    <div class="timeline-heading">
+                                        <h6 class="timeline-title">Long-term: Strategy Implementation</h6>
+                                    </div>
+                                    <div class="timeline-body">
+                                        <p>Implement consolidated purchasing strategy and ongoing price monitoring system to prevent future disparities.</p>
+                                    </div>
+                                    <div class="timeline-footer">
+                                        <span class="badge bg-secondary">3-6 months</span>
+                                    </div>
+                                </div>
+                            </div>
+                        {% elif insight.insight_type == 'resource' %}
+                            <div class="timeline-item">
+                                <div class="timeline-badge bg-success">
+                                    <i class="fas fa-1"></i>
+                                </div>
+                                <div class="timeline-panel">
+                                    <div class="timeline-heading">
+                                        <h6 class="timeline-title">Immediate: Waste Assessment</h6>
+                                    </div>
+                                    <div class="timeline-body">
+                                        <p>Conduct detailed assessment of identified waste areas. Document specific processes and practices contributing to resource waste.</p>
+                                    </div>
+                                    <div class="timeline-footer">
+                                        <span class="badge bg-secondary">1-2 weeks</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-badge bg-success">
+                                    <i class="fas fa-2"></i>
+                                </div>
+                                <div class="timeline-panel">
+                                    <div class="timeline-heading">
+                                        <h6 class="timeline-title">Short-term: Process Improvements</h6>
+                                    </div>
+                                    <div class="timeline-body">
+                                        <p>Implement process improvements targeting highest waste areas. Train staff on new procedures and resource utilization best practices.</p>
+                                    </div>
+                                    <div class="timeline-footer">
+                                        <span class="badge bg-secondary">1-3 months</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-badge bg-success">
+                                    <i class="fas fa-3"></i>
+                                </div>
+                                <div class="timeline-panel">
+                                    <div class="timeline-heading">
+                                        <h6 class="timeline-title">Long-term: Monitoring System</h6>
+                                    </div>
+                                    <div class="timeline-body">
+                                        <p>Develop and implement resource monitoring system with regular reporting and accountability mechanisms.</p>
+                                    </div>
+                                    <div class="timeline-footer">
+                                        <span class="badge bg-secondary">3-6 months</span>
+                                    </div>
+                                </div>
+                            </div>
+                        {% elif insight.insight_type == 'outcome' %}
+                            <div class="timeline-item">
+                                <div class="timeline-badge bg-info">
+                                    <i class="fas fa-1"></i>
+                                </div>
+                                <div class="timeline-panel">
+                                    <div class="timeline-heading">
+                                        <h6 class="timeline-title">Immediate: Clinical Review</h6>
+                                    </div>
+                                    <div class="timeline-body">
+                                        <p>Conduct clinical review of identified treatments to validate effectiveness findings and identify appropriate use cases for each option.</p>
+                                    </div>
+                                    <div class="timeline-footer">
+                                        <span class="badge bg-secondary">2-4 weeks</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-badge bg-info">
+                                    <i class="fas fa-2"></i>
+                                </div>
+                                <div class="timeline-panel">
+                                    <div class="timeline-heading">
+                                        <h6 class="timeline-title">Short-term: Protocol Updates</h6>
+                                    </div>
+                                    <div class="timeline-body">
+                                        <p>Update treatment protocols to prioritize most cost-effective options where clinically appropriate. Develop guidelines for practitioners.</p>
+                                    </div>
+                                    <div class="timeline-footer">
+                                        <span class="badge bg-secondary">1-3 months</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-badge bg-info">
+                                    <i class="fas fa-3"></i>
+                                </div>
+                                <div class="timeline-panel">
+                                    <div class="timeline-heading">
+                                        <h6 class="timeline-title">Long-term: Outcome Tracking</h6>
+                                    </div>
+                                    <div class="timeline-body">
+                                        <p>Implement standardized outcome tracking and reporting system to continuously monitor treatment effectiveness and costs.</p>
+                                    </div>
+                                    <div class="timeline-footer">
+                                        <span class="badge bg-secondary">3-6 months</span>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-info-circle me-2"></i> No action plan available for this insight.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Information -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i> Additional Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Analysis Methodology</h6>
+                    <p>
+                        {% if insight.insight_type == 'pricing' %}
+                            This insight was generated through comparative analysis of pricing data across different regions and suppliers. 
+                            Statistical methods were used to identify significant price disparities and potential optimization opportunities.
+                        {% elif insight.insight_type == 'resource' %}
+                            This insight was generated through analysis of resource allocation and utilization patterns.
+                            Statistical methods were used to identify potential waste and inefficiencies in resource usage.
+                        {% elif insight.insight_type == 'outcome' %}
+                            This insight was generated through comparative analysis of treatment outcomes and costs.
+                            Cost-effectiveness analysis was used to identify optimal treatment options based on clinical outcomes and associated costs.
+                        {% else %}
+                            Methodology information not available for this insight type.
+                        {% endif %}
+                    </p>
+                    
+                    <h6 class="mt-4">Data Sources</h6>
+                    <ul>
+                        {% if insight.insight_type == 'pricing' %}
+                            <li>Internal procurement records</li>
+                            <li>Supplier contract database</li>
+                            <li>Market price benchmarks</li>
+                            <li>Regional pricing data</li>
+                        {% elif insight.insight_type == 'resource' %}
+                            <li>Resource allocation records</li>
+                            <li>Department usage reports</li>
+                            <li>Industry benchmarks</li>
+                            <li>Historical utilization data</li>
+                        {% elif insight.insight_type == 'outcome' %}
+                            <li>Clinical outcome records</li>
+                            <li>Treatment cost data</li>
+                            <li>Patient demographic information</li>
+                            <li>Clinical trial results</li>
+                        {% else %}
+                            <li>Data source information not available</li>
+                        {% endif %}
+                    </ul>
+                </div>
+                
+                <div class="col-md-6">
+                    <h6>Assumptions & Limitations</h6>
+                    <ul>
+                        {% if insight.insight_type == 'pricing' %}
+                            <li>Pricing data is assumed to be for equivalent products/services across regions</li>
+                            <li>Currency conversion rates are based on average exchange rates for the analysis period</li>
+                            <li>Market conditions and regulatory differences between regions may not be fully accounted for</li>
+                            <li>Limited to data available in the system and may not represent all possible suppliers or regions</li>
+                        {% elif insight.insight_type == 'resource' %}
+                            <li>Resource utilization patterns are assumed to be representative of typical operations</li>
+                            <li>Waste identification is based on statistical deviation from expected utilization</li>
+                            <li>Differences in service delivery models may not be fully accounted for</li>
+                            <li>Limited to resources tracked in the system</li>
+                        {% elif insight.insight_type == 'outcome' %}
+                            <li>Treatment outcomes are assumed to be comparable across patient populations</li>
+                            <li>Cost data includes direct treatment costs but may not capture all indirect costs</li>
+                            <li>Patient risk factors and severity adjustments may be limited</li>
+                            <li>Limited to treatments and outcomes tracked in the system</li>
+                        {% else %}
+                            <li>Assumption and limitation information not available</li>
+                        {% endif %}
+                    </ul>
+                    
+                    <h6 class="mt-4">Related Insights</h6>
+                    <div class="list-group">
+                        <a href="#" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">Related Insight 1</h6>
+                                <small>3 days ago</small>
+                            </div>
+                            <p class="mb-1">Brief description of related insight that provides additional context</p>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">Related Insight 2</h6>
+                                <small>1 week ago</small>
+                            </div>
+                            <p class="mb-1">Brief description of another related insight with complementary findings</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comments & Feedback -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-comments me-2"></i> Comments & Feedback</h5>
+        </div>
+        <div class="card-body">
+            <div class="comments-container mb-4">
+                <!-- Sample comments - in a real implementation, these would be dynamic -->
+                <div class="comment">
+                    <div class="comment-header d-flex justify-content-between">
+                        <div>
+                            <span class="fw-bold">Jane Smith</span>
+                            <span class="text-muted ms-2">Director of Procurement</span>
+                        </div>
+                        <small class="text-muted">2 days ago</small>
+                    </div>
+                    <div class="comment-body">
+                        <p>This insight provides valuable information for our upcoming supplier negotiations. I've shared it with the procurement team to prepare for our quarterly review meetings.</p>
+                    </div>
+                </div>
+                
+                <div class="comment mt-3">
+                    <div class="comment-header d-flex justify-content-between">
+                        <div>
+                            <span class="fw-bold">John Davis</span>
+                            <span class="text-muted ms-2">Financial Analyst</span>
+                        </div>
+                        <small class="text-muted">Yesterday</small>
+                    </div>
+                    <div class="comment-body">
+                        <p>The potential savings identified here align with our cost reduction targets. I've incorporated these findings into our financial projections for the next fiscal year.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <hr>
+            
+            <!-- Comment Form -->
+            <form id="commentForm">
+                <div class="mb-3">
+                    <label for="commentText" class="form-label">Add Your Comment</label>
+                    <textarea class="form-control" id="commentText" rows="3" placeholder="Enter your comment or feedback on this insight..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane me-2"></i> Submit Comment
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Share & Export Options -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-share-alt me-2"></i> Share & Export Options</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Share This Insight</h6>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" value="{{ request.url }}" id="shareUrl" readonly>
+                        <button class="btn btn-outline-secondary" type="button" id="copyLinkBtn">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="recipientEmail" class="form-label">Share via Email</label>
+                        <div class="input-group">
+                            <input type="email" class="form-control" id="recipientEmail" placeholder="colleague@example.com">
+                            <button class="btn btn-primary" type="button" id="shareEmailBtn">
+                                <i class="fas fa-envelope"></i> Send
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <h6>Export Options</h6>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" type="button" id="exportPdfBtn">
+                            <i class="fas fa-file-pdf me-2"></i> Export as PDF
+                        </button>
+                        <button class="btn btn-outline-success" type="button" id="exportExcelBtn">
+                            <i class="fas fa-file-excel me-2"></i> Export as Excel
+                        </button>
+                        <button class="btn btn-outline-info" type="button" id="exportPptBtn">
+                            <i class="fas fa-file-powerpoint me-2"></i> Export as PowerPoint
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Email Share Modal -->
+<div class="modal fade" id="shareEmailModal" tabindex="-1" aria-labelledby="shareEmailModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shareEmailModalLabel">Share Insight via Email</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="shareEmailForm">
+                    <div class="mb-3">
+                        <label for="emailRecipients" class="form-label">Recipients</label>
+                        <input type="text" class="form-control" id="emailRecipients" placeholder="Enter email addresses separated by commas">
+                    </div>
+                    <div class="mb-3">
+                        <label for="emailSubject" class="form-label">Subject</label>
+                        <input type="text" class="form-control" id="emailSubject" value="Insight: {{ insight.title }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="emailMessage" class="form-label">Message</label>
+                        <textarea class="form-control" id="emailMessage" rows="4">I'd like to share this insight with you from our HealthEconomics360 platform. Please take a look and let me know your thoughts.</textarea>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="attachPdf" checked>
+                        <label class="form-check-label" for="attachPdf">Attach PDF report</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="sendEmailBtn">
+                    <i class="fas fa-paper-plane me-2"></i> Send Email
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Metric styles */
+    .metric-item {
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 1px solid #eee;
+        padding: 10px 0;
+    }
+    
+    .metric-item:last-child {
+        border-bottom: none;
+    }
+    
+    .metric-label {
+        font-weight: 500;
+        color: #6c757d;
+    }
+    
+    .metric-value {
+        font-weight: 700;
+    }
+    
+    /* Timeline styles */
+    .timeline {
+        position: relative;
+        padding: 1rem 0;
+    }
+    
+    .timeline:before {
+        content: '';
+        position: absolute;
+        height: 100%;
+        width: 4px;
+        background: #e9ecef;
+        left: 31px;
+        top: 0;
+        border-radius: 2px;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 30px;
+    }
+    
+    .timeline-badge {
+        position: absolute;
+        top: 0;
+        left: 16px;
+        width: 34px;
+        height: 34px;
+        z-index: 100;
+        border-radius: 50%;
+        text-align: center;
+        padding-top: 7px;
+        font-weight: 600;
+        color: white;
+    }
+    
+    .timeline-panel {
+        position: relative;
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 15px;
+        margin-left: 60px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    
+    .timeline-title {
+        margin-top: 0;
+        margin-bottom: 5px;
+        font-weight: 600;
+    }
+    
+    .timeline-body > p {
+        margin-bottom: 0;
+    }
+    
+    .timeline-footer {
+        margin-top: 10px;
+    }
+    
+    /* Comment styles */
+    .comment {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+    }
+    
+    .comment-header {
+        margin-bottom: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize insight detail page functionality
+        initInsightDetail();
+        
+        // Set up event handlers
+        setupEventHandlers();
+    });
+    
+    /**
+     * Initialize insight detail page functionality
+     */
+    function initInsightDetail() {
+        // Initialize appropriate chart based on insight type
+        const insightType = '{{ insight.insight_type }}';
+        
+        if (insightType === 'pricing') {
+            initPricingChart();
+        } else if (insightType === 'resource') {
+            initResourceChart();
+        } else if (insightType === 'outcome') {
+            initOutcomeChart();
+        }
+    }
+    
+    /**
+     * Set up event handlers for page interactions
+     */
+    function setupEventHandlers() {
+        // Print button
+        document.getElementById('print-insight')?.addEventListener('click', function() {
+            window.print();
+        });
+        
+        // Export button
+        document.getElementById('export-insight')?.addEventListener('click', function() {
+            exportInsight();
+        });
+        
+        // Copy link button
+        document.getElementById('copyLinkBtn')?.addEventListener('click', function() {
+            const shareUrl = document.getElementById('shareUrl');
+            shareUrl.select();
+            document.execCommand('copy');
+            
+            // Show success tooltip
+            this.setAttribute('data-original-title', 'Copied!');
+            $(this).tooltip('show');
+            
+            // Reset tooltip after a delay
+            setTimeout(() => {
+                this.setAttribute('data-original-title', 'Copy');
+            }, 2000);
+        });
+        
+        // Email share button
+        document.getElementById('shareEmailBtn')?.addEventListener('click', function() {
+            const recipientEmail = document.getElementById('recipientEmail').value;
+            if (recipientEmail) {
+                document.getElementById('emailRecipients').value = recipientEmail;
+                const emailModal = new bootstrap.Modal(document.getElementById('shareEmailModal'));
+                emailModal.show();
+            } else {
+                alert('Please enter an email address');
+            }
+        });
+        
+        // Send email button
+        document.getElementById('sendEmailBtn')?.addEventListener('click', function() {
+            const recipients = document.getElementById('emailRecipients').value;
+            
+            if (!recipients) {
+                alert('Please enter at least one recipient email address');
+                return;
+            }
+            
+            // In a real application, this would call an API to send the email
+            alert(`Email would be sent to: ${recipients}`);
+            
+            // Close modal
+            const emailModal = bootstrap.Modal.getInstance(document.getElementById('shareEmailModal'));
+            emailModal.hide();
+        });
+        
+        // Export buttons
+        document.getElementById('exportPdfBtn')?.addEventListener('click', function() {
+            exportAsPdf();
+        });
+        
+        document.getElementById('exportExcelBtn')?.addEventListener('click', function() {
+            exportAsExcel();
+        });
+        
+        document.getElementById('exportPptBtn')?.addEventListener('click', function() {
+            exportAsPowerPoint();
+        });
+        
+        // Comment form submission
+        document.getElementById('commentForm')?.addEventListener('submit', function(event) {
+            event.preventDefault();
+            addComment();
+        });
+    }
+    
+    /**
+     * Initialize pricing chart
+     */
+    function initPricingChart() {
+        const canvas = document.getElementById('pricingChart');
+        if (!canvas) return;
+        
+        // Sample data - in a real application, this would come from the server
+        {% if insight.data and insight.data.get('region_prices') %}
+            const regions = [{% for region in insight.data.get('region_prices', []) %}'{{ region.name }}', {% endfor %}];
+            const prices = [{% for region in insight.data.get('region_prices', []) %}{{ region.price }}, {% endfor %}];
+            const variances = [{% for region in insight.data.get('region_prices', []) %}{{ region.variance }}, {% endfor %}];
+        {% else %}
+            const regions = ['Region A', 'Region B', 'Region C', 'Region D', 'Region E'];
+            const prices = [125.50, 150.75, 110.25, 175.00, 135.50];
+            const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
+            const variances = prices.map(price => ((price - avgPrice) / avgPrice) * 100);
+        {% endif %}
+        
+        // Create chart
+        const ctx = canvas.getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: regions,
+                datasets: [
+                    {
+                        label: 'Price ($)',
+                        data: prices,
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Variance from Average (%)',
+                        data: variances,
+                        type: 'line',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+                        pointBorderColor: '#fff',
+                        pointRadius: 4,
+                        fill: false,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: 'Price ($)'
+                        }
+                    },
+                    y1: {
+                        position: 'right',
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Variance (%)'
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    /**
+     * Initialize resource chart
+     */
+    function initResourceChart() {
+        const canvas = document.getElementById('resourceChart');
+        if (!canvas) return;
+        
+        // Sample data - in a real application, this would come from the server
+        {% if insight.data and insight.data.get('resources') %}
+            const resources = [{% for resource in insight.data.get('resources', [])[:5] %}'{{ resource.name }}', {% endfor %}];
+            const excessCosts = [{% for resource in insight.data.get('resources', [])[:5] %}{{ resource.excess_cost }}, {% endfor %}];
+        {% else %}
+            const resources = ['Resource A', 'Resource B', 'Resource C', 'Resource D', 'Resource E'];
+            const excessCosts = [12500, 8750, 6300, 4200, 3100];
+        {% endif %}
+        
+        // Create chart
+        const ctx = canvas.getContext('2d');
+        new Chart(ctx, {
+            type: 'horizontalBar',
+            data: {
+                labels: resources,
+                datasets: [
+                    {
+                        label: 'Excess Cost ($)',
+                        data: excessCosts,
+                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Excess Cost ($)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    /**
+     * Initialize outcome chart
+     */
+    function initOutcomeChart() {
+        const canvas = document.getElementById('outcomeChart');
+        if (!canvas) return;
+        
+        // Sample data - in a real application, this would come from the server
+        {% if insight.data and insight.data.get('best_treatment') and insight.data.get('worst_treatment') %}
+            const treatments = ['{{ insight.data.get("best_treatment").name }}', '{{ insight.data.get("worst_treatment").name }}'];
+            const effectiveness = [{{ insight.data.get('best_treatment').effectiveness }}, {{ insight.data.get('worst_treatment').effectiveness }}];
+            const costs = [{{ insight.data.get('best_treatment').cost }}, {{ insight.data.get('worst_treatment').cost }}];
+            const ratios = [{{ insight.data.get('best_treatment').ratio|default(0) }}, {{ insight.data.get('worst_treatment').ratio|default(0) }}];
+        {% else %}
+            const treatments = ['Treatment A', 'Treatment B'];
+            const effectiveness = [85, 78];
+            const costs = [1200, 1800];
+            const ratios = [14.1, 23.1];
+        {% endif %}
+        
+        // Create chart
+        const ctx = canvas.getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: treatments,
+                datasets: [
+                    {
+                        label: 'Effectiveness',
+                        data: effectiveness,
+                        backgroundColor: 'rgba(23, 162, 184, 0.7)',
+                        borderColor: 'rgba(23, 162, 184, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Cost ($)',
+                        data: costs,
+                        backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'y1'
+                    },
+                    {
+                        label: 'Cost-Effectiveness Ratio',
+                        data: ratios,
+                        type: 'line',
+                        backgroundColor: 'rgba(255, 193, 7, 0.4)',
+                        borderColor: 'rgba(255, 193, 7, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(255, 193, 7, 1)',
+                        pointBorderColor: '#fff',
+                        pointRadius: 4,
+                        fill: false,
+                        yAxisID: 'y2'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: 'Effectiveness'
+                        }
+                    },
+                    y1: {
+                        position: 'right',
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Cost ($)'
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    },
+                    y2: {
+                        display: false,
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+    
+    /**
+     * Export insight
+     */
+    function exportInsight() {
+        // Show export options
+        document.getElementById('exportPdfBtn').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    /**
+     * Export as PDF
+     */
+    function exportAsPdf() {
+        // In a real application, this would call an API to generate the PDF
+        alert('Exporting insight as PDF...');
+    }
+    
+    /**
+     * Export as Excel
+     */
+    function exportAsExcel() {
+        // In a real application, this would call an API to generate the Excel file
+        alert('Exporting insight as Excel...');
+    }
+    
+    /**
+     * Export as PowerPoint
+     */
+    function exportAsPowerPoint() {
+        // In a real application, this would call an API to generate the PowerPoint file
+        alert('Exporting insight as PowerPoint...');
+    }
+    
+    /**
+     * Add comment to insight
+     */
+    function addComment() {
+        const commentText = document.getElementById('commentText').value;
+        
+        if (!commentText.trim()) {
+            alert('Please enter a comment');
+            return;
+        }
+        
+        // In a real application, this would call an API to save the comment
+        // For demo purposes, we'll add it to the UI directly
+        const commentsContainer = document.querySelector('.comments-container');
+        
+        const newComment = document.createElement('div');
+        newComment.className = 'comment mt-3';
+        newComment.innerHTML = `
+            <div class="comment-header d-flex justify-content-between">
+                <div>
+                    <span class="fw-bold">{{ current_user.get_full_name() }}</span>
+                    <span class="text-muted ms-2">{{ current_user.position }}</span>
+                </div>
+                <small class="text-muted">Just now</small>
+            </div>
+            <div class="comment-body">
+                <p>${commentText}</p>
+            </div>
+        `;
+        
+        commentsContainer.appendChild(newComment);
+        
+        // Clear comment form
+        document.getElementById('commentText').value = '';
+    }
+</script>
+{% endblock %}
