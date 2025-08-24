@@ -11,6 +11,24 @@ import datetime
 
 api = Blueprint('api', __name__, url_prefix='/api')
 
+@api.route('/health')
+def health_check():
+    """Health check endpoint for monitoring"""
+    try:
+        # Basic database connectivity check
+        db.session.execute('SELECT 1')
+        return jsonify({
+            'status': 'healthy',
+            'timestamp': datetime.datetime.utcnow().isoformat(),
+            'service': 'HealthEconomics360'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy', 
+            'timestamp': datetime.datetime.utcnow().isoformat(),
+            'error': str(e)
+        }), 500
+
 @api.route('/drugs')
 @login_required
 def get_drugs():
