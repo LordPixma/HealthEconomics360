@@ -50,6 +50,7 @@ def create_app(config_name='default'):
     app.register_blueprint(api_blueprint)
     
     # Register error handlers
-    from app.routes import errors
+    from app.routes.errors import register_error_handlers
+    register_error_handlers(app)
     
     return app
