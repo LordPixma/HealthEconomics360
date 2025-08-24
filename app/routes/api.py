@@ -16,7 +16,8 @@ def health_check():
     """Health check endpoint for monitoring"""
     try:
         # Basic database connectivity check
-        db.session.execute('SELECT 1')
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1'))
         return jsonify({
             'status': 'healthy',
             'timestamp': datetime.datetime.utcnow().isoformat(),
